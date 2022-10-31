@@ -7,17 +7,19 @@ secondary market based on log of popularity
 import csv
 from random import sample, randrange, random
 
-purchase_price = 0.001  #ETH
+base_price = 0.001 #ETH
+k = 3
 
 #percentage of rewards
 athlete_reward_percent = 0.1
 owner_reward_percent = 0.05
 
 #number of total counts
-athletes = 500
-purchases = 10000
-exchanges = 10000
-auctions = 10000
+m = 100
+athletes = 5 * m
+purchases = 100 * m
+exchanges = 100 * m
+auctions = 100 * m
 
 popularity = []
 
@@ -28,10 +30,10 @@ for i in range(athletes):
     popularity.append(rand_float_range(0,1))
 
 def func_purchase_reward():
-    '''create a list to store the reward each athlete receives'''
     rewards = []
     for i in range(athletes):
-        reward = purchase_price * athlete_reward_percent * (popularity[i] * purchases)
+        #price is fixed
+        reward = base_price * athlete_reward_percent * (popularity[i] * purchases) # number of purchases is proportional to popularity
         rewards.append(reward)  
     return rewards
 
@@ -39,8 +41,8 @@ def func_purchase_reward_vary_price():
     '''create a list to store the reward each athlete receives'''
     rewards = []
     for i in range(athletes):
-        price = purchase_price + 0.001 * popularity[i]
-        reward = price * athlete_reward_percent * (popularity[i] * purchases)
+        price = base_price + base_price * pow(popularity[i],k)  #price is proportional to popularity
+        reward = price * athlete_reward_percent * (popularity[i] * purchases)   #number of purchase is proportional to popularity
         rewards.append(reward)
     return rewards
 
@@ -48,35 +50,40 @@ def func_exchange_reward_betn_2athletes():
     ex_rewards = []
     for i in range(athletes):
         ex_rewards.append(0)
-    for i in range(exchanges):
-        idx = sample(range(athletes), 2)
-        diffPopularity = abs(popularity[idx[0]] - popularity[idx[1]])   #the more difference in popularity, the more price to pay for higher popular celeb
-        exchange_price = rand_float_range(0.001 * diffPopularity, 0.01 * diffPopularity) # more difference implies exchange price range is larger and shifts to right
-        totalPopularity = popularity[idx[0]] + popularity[idx[1]]   #to find the fraction of exchange price that should go to each celeb
-        ex_rewards[idx[0]] += exchange_price * popularity[idx[0]]/totalPopularity * athlete_reward_percent
-        ex_rewards[idx[1]] += exchange_price * popularity[idx[1]]/totalPopularity * athlete_reward_percent   
+    for i in range(athletes):
+        for k in range(int(exchanges * popularity[i])):
+            j = randrange(0,athletes)
+            while(j == i):
+                j = randrange(0,athletes)
+            diffPopularity = abs(popularity[i] - popularity[j])   #the more difference in popularity, the more price to pay for higher popular celeb
+            exchange_price = rand_float_range(0.001 * pow(diffPopularity,k), 0.01 * pow(diffPopularity,k)) # more difference implies exchange price range is larger and shifts to right
+            totalPopularity = popularity[i] + popularity[j]   #to find the fraction of exchange price that should go to each celeb
+            ex_rewards[i] += exchange_price * popularity[i]/totalPopularity * athlete_reward_percent
+            ex_rewards[j] += exchange_price * popularity[j]/totalPopularity * athlete_reward_percent   
     return ex_rewards
 
-def func_exchange_reward_1athlete():
+def func_auction():
     ex_rewards = []
     for i in range(athletes):
         ex_rewards.append(0) 
-    #when one exchanges its card, it could sell card of less popular athlete as well on a low price to get rid of it or a highly popular athlete with a higher price
-    for i in range(exchanges):
-        idx = randrange(athletes)
-        exchange_price = 0.001 + rand_float_range(0.001 * popularity[idx], 0.1 * popularity[idx])
-        ex_rewards[idx] += exchange_price * athlete_reward_percent
+        #more popularity, more exchanges
+        for j in range(int(exchanges * popularity[i])):
+            exchange_price = 0.001 + rand_float_range(0.001 * pow(popularity[i],k), 0.1 * pow(popularity[i],k))
+            ex_rewards[i] += exchange_price * athlete_reward_percent
+
     return ex_rewards
 
 
-def func_auction():
+def func_exchange_reward_1athlete():
     au_rewards = []
     for i in range(athletes):
         au_rewards.append(0)
-        # more popularity more auctions
-        for j in range(int(auctions * popularity[i])):
-            winning_bid_price = 0.001 + rand_float_range(0.001 * popularity[i], 0.1 * popularity[i])
-            au_rewards[i] += winning_bid_price * athlete_reward_percent
+    #when one auction its card, it could sell card of less popular athlete as well on a low price to get rid of it or a highly popular athlete with a higher price
+    #hence, number of auctions for a given athlete may not be proportional to the popularity of the athlete
+    for i in range(auctions):
+        idx = randrange(athletes)
+        winning_bid_price = 0.001 + rand_float_range(0.001 * pow(popularity[idx],k), 0.1 * pow(popularity[idx],k))
+        au_rewards[idx] += winning_bid_price * athlete_reward_percent
     return au_rewards
 
 with open('2.rewards_on_purchase.csv', 'a') as csvfile:
