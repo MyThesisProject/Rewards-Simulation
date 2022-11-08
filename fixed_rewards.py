@@ -10,7 +10,7 @@ from random import sample, randrange, random
 base_price = 0.001 #ETH
 varPrice = 0.1 #ETH
 
-k = 0
+k = 1
 
 #percentage of rewards
 athlete_reward_percent = 0.1
@@ -32,13 +32,15 @@ def rand_float_range(start, end):
 for i in range(athletes):
     popularity.append(rand_float_range(0,1))
 
+popularity.sort()
+
 def func_purchase_reward():
     for i in range(athletes):
         rewards.append(0)
     for j in range(purchases):
         #price is fixed
         idx = randrange(0,athletes)
-        rewards[idx] += base_price * athlete_reward_percent # number of purchases is random
+        rewards[idx] += base_price * athlete_reward_percent
 
 def func_exchange_reward_betn_2athletes():
     for m in range(exchanges):
